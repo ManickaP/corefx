@@ -1,0 +1,76 @@
+<Project>
+  
+  <!-- Generates a launch configuration per test project, saves it into ProjectName.launch.json in .vscode directory, the files are then merged in VSCodeConfiguration target. -->
+  <Target Name="VSCodeLaunchConfiguration" Condition=" $(IsTestProject) == 'true' And $(IsTestSupportProject) == 'false' And Exists('$(DirectoryToBuild)') " AfterTargets="Build">
+    <ItemGroup>
+      <_VSCodeLaunchJsonLine Include="line00"><Text>        {</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line01"><Text>            "name": ".NET Core Launch $(MSBuildProjectName)",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line02"><Text>            "type": "coreclr",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line03"><Text>            "request": "launch",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line04"><Text>            "program": "${workspaceFolder}/../../artifacts/bin/testhost/$(BuildConfiguration)/dotnet",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line05"><Text>            "args": ["exec", "--runtimeconfig", "$(MSBuildProjectName).runtimeconfig.json", "xunit.console.dll", "$(MSBuildProjectName).dll", "-parallel", "none"],</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line06"><Text>            "cwd": "${workspaceFolder}/../../artifacts/bin/$(MSBuildProjectName)/$(Configuration)",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line07"><Text>            "console": "internalConsole",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line08"><Text>            "stopAtEntry": false</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line09"><Text>        },</Text></_VSCodeLaunchJsonLine>
+    </ItemGroup>
+    <PropertyGroup>
+	    <_VSCodeDir>$([MSBuild]::NormalizeDirectory('$(DirectoryToBuild)', '.vscode'))</_VSCodeDir>
+	    <_VSCodeLaunchJsonPath>$([MSBuild]::NormalizePath('$(_VSCodeDir)', '$(MSBuildProjectName).launch.json'))</_VSCodeLaunchJsonPath>
+	  </PropertyGroup>
+	  <MakeDir Directories="$(_VSCodeDir)" />
+	  <WriteLinesToFile File="$(_VSCodeLaunchJsonPath)" Lines="@(_VSCodeLaunchJsonLine->'%(Text)')" Overwrite="true" />
+  </Target>
+  
+  <!-- Merges content of ProjectName.launch.json file into a single launch.json in .vscode directory and cleans up the individual files. -->
+  <Target Name="VSCodeConfiguration" Condition=" Exists('$(DirectoryToBuild)') " AfterTargets="BuildTests">
+    <PropertyGroup>
+      <_VSCodeDir>$([MSBuild]::NormalizeDirectory('$(DirectoryToBuild)/.vscode/'))</_VSCodeDir>
+	    <_VSCodeLaunchJsonPath>$([MSBuild]::NormalizePath('$(_VSCodeDir)', 'launch.json'))</_VSCodeLaunchJsonPath>
+	    <_VSCodeTasksJsonPath>$([MSBuild]::NormalizePath('$(_VSCodeDir)', 'tasks.json'))</_VSCodeTasksJsonPath>
+      <_BuildScriptName>./build.sh</_BuildScriptName>
+      <_BuildScriptName Condition=" $(OS) == 'Windows_NT' ">build.cmd</_BuildScriptName>
+    </PropertyGroup>
+    <ItemGroup>
+      <_VSCodeLaunchConfiguration Include="$(_VSCodeDir)*.launch.json" />
+    </ItemGroup>
+    <ItemGroup>
+      <_VSCodeLaunchJsonLine Include="line00"><Text>{</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line01"><Text>    "version": "0.2.0",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line02"><Text>    "configurations": [</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line03"><Text>$([System.IO.File]::ReadAllText('%(_VSCodeLaunchConfiguration.Identity)').TrimEnd())</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line04"><Text>        {</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line05"><Text>            "name": ".NET Core Attach",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line06"><Text>            "type": "coreclr",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line07"><Text>            "request": "attach",</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line08"><Text>            "processId": "${command:pickProcess}"</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line09"><Text>        }</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line10"><Text>    ]</Text></_VSCodeLaunchJsonLine>
+      <_VSCodeLaunchJsonLine Include="line11"><Text>}</Text></_VSCodeLaunchJsonLine>
+    </ItemGroup>
+    <ItemGroup>
+      <_VSCodeTasksJsonLine Include="line00"><Text>{</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line01"><Text>    "version": "2.0.0",</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line02"><Text>    "tasks": [</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line03"><Text>        {</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line04"><Text>            "label": "build",</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line05"><Text>            "command": "${workspaceFolder}/../../$(_BuildScriptName)",</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line06"><Text>            "type": "process",</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line07"><Text>            "args": [ "$([System.IO.Path]::GetFileName('$(DirectoryToBuild)'))" ],</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line08"><Text>            "problemMatcher": "$msCompile"</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line09"><Text>        },</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line10"><Text>        {</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line11"><Text>            "label": "buildTests",</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line12"><Text>            "command": "${workspaceFolder}/../../$(_BuildScriptName)",</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line13"><Text>            "type": "process",</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line14"><Text>            "args": [ "-buildtests", "$([System.IO.Path]::GetFileName('$(DirectoryToBuild)'))" ],</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line15"><Text>            "problemMatcher": "$msCompile"</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line16"><Text>        },</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line17"><Text>    ]</Text></_VSCodeTasksJsonLine>
+      <_VSCodeTasksJsonLine Include="line18"><Text>}</Text></_VSCodeTasksJsonLine>
+    </ItemGroup>
+	<WriteLinesToFile File="$(_VSCodeLaunchJsonPath)" Lines="@(_VSCodeLaunchJsonLine->'%(Text)')" Overwrite="true" />
+	<WriteLinesToFile File="$(_VSCodeTasksJsonPath)" Lines="@(_VSCodeTasksJsonLine->'%(Text)')" Overwrite="true" />
+    <Delete Files="@(_VSCodeLaunchConfiguration)" />
+  </Target>
+</Project>

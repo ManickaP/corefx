@@ -157,5 +157,7 @@
 
   <!-- Define this target to override the workaround in arcade as we don't need it for our pkgprojs -->
   <Target Name="InitializeStandardNuspecProperties" />
+  
+  <Import Project="$(RepositoryEngineeringDir)VSCodeSupport.targets" />
 
 </Project>
